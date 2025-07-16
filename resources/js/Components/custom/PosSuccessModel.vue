@@ -257,9 +257,7 @@ const receiptHTML = `
     <body>
         <div class="receipt-container">
 
-
-
-  <div class="header">
+ <div class="header "  style="text-align: center;">
                   <img src="/images/billlogo.png" style="width: 250px; height:110px;" />
            ${companyInfo?.value?.name ? `<h1>${companyInfo.value.name}</h1>` : ''}
   ${companyInfo?.value?.address ? `<p>${companyInfo.value.address}</p>` : ''}
@@ -553,7 +551,7 @@ const receiptHTML = `
     </head>
     <body>
         <div class="receipt-container">
-             <div class="header">
+             <div class="header "  style="text-align: center;">
                   <img src="/images/billlogo.png" style="width: 250px; height:110px;" />
            ${companyInfo?.value?.name ? `<h1>${companyInfo.value.name}</h1>` : ''}
   ${companyInfo?.value?.address ? `<p>${companyInfo.value.address}</p>` : ''}
