@@ -256,58 +256,21 @@ const receiptHTML = `
     </head>
     <body>
         <div class="receipt-container">
-            <div class="header">
-
- <!-- Header Section -->
-<div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-
-    <!-- Logo (Left) -->
-  <div style="flex-shrink: 0;text-align: right;">
-          <img src="/images/billlogo.png" alt="Company Logo"
-           style="width: 60px; height: 60px; object-fit: contain;" />
-    </div>
-
-    <!-- Company Info (Right) -->
-    <div style="text-align: right; flex-grow: 1; padding-left: 15px; color: #000;">
-
-      <!-- Company Name -->
-      ${companyInfo?.value?.name
-        ? `<h1 style="margin: 0; font-size: 16px; font-weight: bold;">${companyInfo.value.name}</h1>`
-        : ''
-      }
-
-      <!-- Address -->
-      ${companyInfo?.value?.address
-        ? `<p style="margin: 2px 0; font-size: 12px;">${companyInfo.value.address}</p>`
-        : ''
-      }
-
-      <!-- Phones and Email -->
-      ${(companyInfo?.value?.phone || companyInfo?.value?.phone2 || companyInfo?.value?.email)
-        ? `<p style="margin: 2px 0; font-size: 12px;">
-            ${companyInfo.value.phone || ''}
-            ${companyInfo.value.phone2 ? ' | ' + companyInfo.value.phone2 : ''}
-            ${companyInfo.value.email ? ' | ' + companyInfo.value.email : ''}
-          </p>`
-        : ''
-      }
-
-      <!-- Website -->
-      ${companyInfo?.value?.website
-        ? `<p style="margin: 2px 0; font-size: 12px;">${companyInfo.value.website}</p>`
-        : ''
-      }
-
-    </div>
-  </div>
-</div>
 
 
 
+  <div class="header">
+                  <img src="/images/billlogo.png" style="width: 250px; height:110px;" />
+           ${companyInfo?.value?.name ? `<h1>${companyInfo.value.name}</h1>` : ''}
+  ${companyInfo?.value?.address ? `<p>${companyInfo.value.address}</p>` : ''}
+  ${(companyInfo?.value?.phone || companyInfo?.value?.phone2 || companyInfo?.value?.email)
+            ? `<p>${companyInfo.value.phone || ''} | ${companyInfo.value.phone2 || ''}  ${companyInfo.value.email || ''}</p>`
+            : ''}
+
+          </div>
 
 
-            </div>
+
 
   <div class="info-row">
                   <div>
@@ -590,58 +553,15 @@ const receiptHTML = `
     </head>
     <body>
         <div class="receipt-container">
-            <div class="header">
+             <div class="header">
+                  <img src="/images/billlogo.png" style="width: 250px; height:110px;" />
+           ${companyInfo?.value?.name ? `<h1>${companyInfo.value.name}</h1>` : ''}
+  ${companyInfo?.value?.address ? `<p>${companyInfo.value.address}</p>` : ''}
+  ${(companyInfo?.value?.phone || companyInfo?.value?.phone2 || companyInfo?.value?.email)
+            ? `<p>${companyInfo.value.phone || ''} | ${companyInfo.value.phone2 || ''}  ${companyInfo.value.email || ''}</p>`
+            : ''}
 
- <!-- Header Section -->
-<div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-
-    <!-- Logo (Left) -->
-    <div style="flex-shrink: 0;text-align: right;">
-      <img src="/images/billlogo.png" alt="Company Logo"
-           style="width: 60px; height: 60px; object-fit: contain;" />
-    </div>
-
-    <!-- Company Info (Right) -->
-    <div style="text-align: right; flex-grow: 1; padding-left: 15px; color: #000;">
-
-      <!-- Company Name -->
-      ${companyInfo?.value?.name
-        ? `<h1 style="margin: 0; font-size: 16px; font-weight: bold;">${companyInfo.value.name}</h1>`
-        : ''
-      }
-
-      <!-- Address -->
-      ${companyInfo?.value?.address
-        ? `<p style="margin: 2px 0; font-size: 12px;">${companyInfo.value.address}</p>`
-        : ''
-      }
-
-      <!-- Phones and Email -->
-      ${(companyInfo?.value?.phone || companyInfo?.value?.phone2 || companyInfo?.value?.email)
-        ? `<p style="margin: 2px 0; font-size: 12px;">
-            ${companyInfo.value.phone || ''}
-            ${companyInfo.value.phone2 ? ' | ' + companyInfo.value.phone2 : ''}
-            ${companyInfo.value.email ? ' | ' + companyInfo.value.email : ''}
-          </p>`
-        : ''
-      }
-
-      <!-- Website -->
-      ${companyInfo?.value?.website
-        ? `<p style="margin: 2px 0; font-size: 12px;">${companyInfo.value.website}</p>`
-        : ''
-      }
-
-    </div>
-  </div>
-</div>
-
-
-
-
-
-            </div>
+          </div>
 
 
 
