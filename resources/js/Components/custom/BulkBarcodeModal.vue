@@ -74,7 +74,6 @@
                         <th class="p-3 font-semibold">Wholesale Price</th>
                         <th class="p-3 font-semibold">Retail Price</th>
                         <th class="p-3 font-semibold">Stock Quantity</th>
-
                       </tr>
                     </thead>
                     <tbody>
@@ -97,7 +96,6 @@
                         <td class="p-3">${{ formatPrice(product.whole_price) }}</td>
                         <td class="p-3">${{ formatPrice(product.selling_price) }}</td>
                         <td class="p-3">{{ product.stock_quantity || 0 }}</td>
-
                       </tr>
                     </tbody>
                   </table>
@@ -208,9 +206,6 @@ const generateBarcodes = async () => {
     return;
   }
 
-
-
-
   isGenerating.value = true;
 
   try {
@@ -238,7 +233,7 @@ const generateBarcodes = async () => {
       return;
     }
 
-const htmlContent = `
+    const htmlContent = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -254,10 +249,11 @@ const htmlContent = `
       body {
         font-family: Arial, sans-serif;
         background: white;
+        line-height: 1;
       }
 
       .barcode-container {
-        width: 75mm; /* 2 labels of 37.5mm */
+        width: 75mm;
         margin: 0 auto;
         padding: 0;
         display: flex;
@@ -276,52 +272,83 @@ const htmlContent = `
         height: 25mm;
         display: flex;
         flex-direction: column;
-        align-items: center;
         justify-content: center;
-        padding: 1mm;
+        align-items: center;
+        padding: 0.5mm;
         text-align: center;
-        font-size: 6px;
         background: white;
         box-sizing: border-box;
         overflow: hidden;
       }
 
+      .product-name {
+        font-size: 5px;
+        font-weight: bold;
+        line-height: 1;
+        margin-bottom: 0.5mm;
+        max-height: 4mm;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+      }
+
       .barcode-svg {
-        margin: 0;
-        padding: 0;
-        height: 16mm; /* fits within 25mm height */
+        flex: 1;
         display: flex;
         justify-content: center;
         align-items: center;
+        min-height: 12mm;
+        max-height: 15mm;
+        width: 100%;
       }
 
       .barcode-svg svg {
         max-width: 100%;
         max-height: 100%;
+        width: auto;
+        height: auto;
       }
 
-      .product-code {
+      .bottom-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 5px;
         font-family: monospace;
-        font-size: 6px;
-        font-weight: bold;
+        width: 100%;
+        margin-top: 0.5mm;
+        white-space: nowrap;
         line-height: 1;
-        margin: 0;
-        padding: 0;
+        padding : 0 3mm;
+      }
+
+      .bottom-info span {
+        max-width: 48%;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       @media print {
         @page {
           margin: 0;
-          size: 75mm 25mm;
+          size: 75mm auto;
         }
 
         body {
           margin: 0;
           padding: 0;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .barcode-label {
           border: none;
+          break-inside: avoid;
+        }
+
+        .barcode-row {
+          break-inside: avoid;
         }
       }
     </style>
@@ -337,10 +364,14 @@ const htmlContent = `
             <div class="barcode-row">
               ${[first, second].filter(Boolean).map(product => `
                 <div class="barcode-label">
+                  <div class="product-name">${escapeHtml(product.name || '')}</div>
                   <div class="barcode-svg">
                     <svg id="barcode-${product.id}"></svg>
                   </div>
-                  <div class="product-code">${escapeHtml(product.code)}</div>
+                  <div class="bottom-info">
+                    <span>${escapeHtml(product.code)}</span>
+                    <span>Rs:${parseFloat(product.selling_price || 0).toFixed(2)}</span>
+                  </div>
                 </div>
               `).join('')}
             </div>
@@ -365,12 +396,10 @@ const htmlContent = `
               JsBarcode("#barcode-${product.id}", "${product.barcode}", {
                 format: "CODE128",
                 lineColor: "#000",
-                width: 0.8,
-                height: 32, // taller to fill space
+                width: 1,
+                height: 40,
                 displayValue: false,
                 margin: 0,
-                marginBottom: 0,
-                fontSize: 6,
                 background: "transparent"
               });
             } catch (e) {
@@ -397,7 +426,6 @@ const htmlContent = `
   </body>
 </html>
 `;
-
 
     printWindow.document.open();
     printWindow.document.write(htmlContent);

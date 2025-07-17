@@ -55,7 +55,6 @@
                                     v-model="form.name"
                                     type="text"
                                     id="name"
-                                       required
                                     class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
                                     />
                                  <span v-if="form.errors.name" class="mt-4 text-red-500">
@@ -652,7 +651,7 @@
      selling_price: null,
      discounted_price: null,
      barcode: "",
-     image: null,
+     image: "",
      expire_date: null,
      batch_no: "",
      purchase_date: null,

@@ -47,6 +47,7 @@ class ProductController extends Controller
         $selectedCategory = $request->input('selectedCategory');
 
         $productsQuery = Product::with('category', 'color', 'size', 'supplier')
+         ->whereNotNull('name')
             ->when($query, function ($queryBuilder) use ($query) {
                 $queryBuilder->where(function ($subQuery) use ($query) {
                     $subQuery->where('name', 'like', "%{$query}%")
@@ -97,6 +98,8 @@ class ProductController extends Controller
     $selectedCategory = $request->input('selectedCategory');
 
     $rawProducts = Product::with(['category', 'color', 'size', 'supplier'])
+
+     ->whereNotNull('name')
         ->when($query, fn($q) => $q->where(fn($sub) =>
             $sub->where('name', 'like', "%{$query}%")
                  ->orWhere('code', 'like', "%{$query}%")))
@@ -225,7 +228,7 @@ $expiryAlertCount = $expiryProducts->count();
 
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
-            'name' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
             'code' => 'nullable|max:50',
             // 'code' => [
             //     'string',
@@ -351,7 +354,7 @@ public function productVariantStore(Request $request)
 
     $validated = $request->validate([
         'category_id' => 'nullable|exists:categories,id',
-        'name' => 'nullable|string|max:255',
+        'name' => 'required|string|max:255',
         'code' => [
             'nullable',
             'string',
@@ -652,23 +655,23 @@ private function generateUniqueBarcode($length = 12)
         $request->validate([
             'csv_file' => 'required|mimes:csv,txt|max:2048',
         ]);
-    
+
         $file = $request->file('csv_file');
-    
+
         $data = array_map('str_getcsv', file($file));
-    
+
         // Normalize header row
         $headers = array_map('strtolower', array_map('trim', $data[0]));
         unset($data[0]);
-    
+
         foreach ($data as $row) {
             $row = array_map('trim', $row);
-    
+
             // Skip empty rows
             if (count(array_filter($row)) === 0) {
                 continue;
             }
-    
+
             Product::create([
                 'name'                => $row[0] ?? null,
                 'code'                => $row[1] ?? null,
@@ -688,9 +691,9 @@ private function generateUniqueBarcode($length = 12)
                 'final_whole_price'   => is_numeric($row[15] ?? null) ? $row[15] : 0,
             ]);
         }
-    
+
         return back()->with('success', 'CSV uploaded and products saved successfully.');
     }
-    
+
 
 }

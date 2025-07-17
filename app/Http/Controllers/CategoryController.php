@@ -22,9 +22,6 @@ class CategoryController extends Controller
             abort(403, 'Unauthorized');
         }
         Gate::allows('hasRole', ['Admin', 'Manager']);
-        // $paginatedcategories = Category::with('parent')->latest()->paginate(10);
-        // $allcategories = Category::with('parent')->latest()->get();
-        // $allcategories = Category::with('parent')->latest()->get()
         $allcategories = Category::with('parent')
             ->orderBy('created_at', 'desc')
             ->get() // Get the collection
@@ -57,30 +54,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    // public function store(Request $request)
-    // {
-
-
-    //     if (!Gate::allows('hasRole', ['Admin'])) {
-    //         abort(403, 'Unauthorized');
-    //     }
-
-    //     $validated = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'parent_id' => 'nullable|exists:categories,id',
-    //     ]);
-
-
-    //     Category::create($validated);
-
-    //     return redirect()->route('categories.index')->banner('Category created successfully.');
-
-    //  }
-
-
-
-
-
+    
     public function store(Request $request)
     {
 
@@ -119,11 +93,6 @@ class CategoryController extends Controller
         return redirect()->back()->withErrors(['error' => 'Invalid data provided.']);
     }
 
-
-
-
-
-
     public function edit(Category $category)
     {
         return Inertia::render('Categories/Edit', [
@@ -158,7 +127,6 @@ class CategoryController extends Controller
 
         return redirect()->route('categories.index')->banner('Category updated successfully.');
 
-        // return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
     }
 
     public function destroy(Category $category)

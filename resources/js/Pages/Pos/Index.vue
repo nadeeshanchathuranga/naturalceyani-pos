@@ -306,9 +306,11 @@ class="cursor-pointer py-1 text-center px-4 bg-red-600 rounded-xl font-bold text
       <p class="text-xl font-medium">Cash</p>
       <div class="flex items-center">
         <CurrencyInput
+           ref="cashInputRef"
           v-model="cash"
           :options="{ currency: 'LKR' }"
           class="rounded-md px-3 py-1   text-black"
+          tabindex="1"
         />
         <span class="ml-2 text-lg font-medium">LKR</span>
       </div>
@@ -574,6 +576,7 @@ class="cursor-pointer py-1 text-center px-4 bg-red-600 rounded-xl font-bold text
     <!-- Confirm Order Button -->
     <div class="w-full">
       <button
+        ref="confirmButtonRef"
         @click="selectedOrder?.order_id ? updateOrder() : submitOrder()"
         type="button"
         :disabled="products.length === 0"
@@ -581,6 +584,7 @@ class="cursor-pointer py-1 text-center px-4 bg-red-600 rounded-xl font-bold text
           'w-full bg-black py-4 text-xl font-bold tracking-wide text-white uppercase rounded-xl transition',
           products.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
         ]"
+        tabindex="2"
       >
         <i class="pr-3 ri-add-circle-fill"></i>
         {{ selectedOrder?.order_id ? 'Update Order' : 'Confirm Order' }}
@@ -706,7 +710,7 @@ import Banner from "@/Components/Banner.vue";
 import PosSuccessModel from "@/Components/custom/PosSuccessModel.vue";
 import AlertModel from "@/Components/custom/AlertModel.vue";
 import { useForm, router } from "@inertiajs/vue3";
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
 import { Head } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
 import axios from "axios";
@@ -744,7 +748,17 @@ const bank_name = ref('');
 const cheque_date = ref('');
 const cheque_amount = ref('');
 const cheque_notes = ref('');
+const cashInputRef = ref(null);
+const confirmButtonRef = ref(null);
+const shouldFocusCashNext = ref(false);
 
+const focusOnCashField = () => {
+  nextTick(() => {
+    if (cashInputRef.value) {
+      cashInputRef.value.focus();
+    }
+  });
+};
 
 
 const handleModalOpenUpdate = (newValue) => {
@@ -758,9 +772,8 @@ const addCustomerDetails = () => {
   isModalOpen.value = false;
 };
 
-
 const props = defineProps({
-    loggedInUser: Object, // Using backend product name to avoid messing with selected products
+    loggedInUser: Object, 
     allcategories: Array,
     allemployee: Array,
     colors: Array,
@@ -769,18 +782,12 @@ const props = defineProps({
 });
 
 const discount = ref(0);
-
 const customer = ref({
     name: "",
     countryCode: "",
     contactNumber: "",
     email: "",
 });
-
-
-
-
-
 
 const toggleMode = () => {
   isWholesale.value = !isWholesale.value
@@ -796,8 +803,8 @@ const selectedPaymentMethod = ref("cash");
 
 const refreshData = () => {
     router.visit(route("pos.index"), {
-        preserveScroll: false, // Reset scroll
-        preserveState: false, // Reset component state
+        preserveScroll: false, 
+        preserveState: false, 
     });
 };
 
@@ -806,14 +813,15 @@ const removeProduct = (id) => {
 };
 
 const removeCoupon = () => {
-    appliedCoupon.value = null; // Clear the applied coupon
-    couponForm.code = ""; // Clear the coupon field
+    appliedCoupon.value = null; 
+    couponForm.code = ""; 
 };
 
 const incrementQuantity = (id) => {
     const product = products.value.find((item) => item.id === id);
     if (product) {
         product.quantity += 1;
+        shouldFocusCashNext.value = true;
     }
 };
 
@@ -821,9 +829,9 @@ const decrementQuantity = (id) => {
     const product = products.value.find((item) => item.id === id);
     if (product && product.quantity > 1) {
         product.quantity -= 1;
+        shouldFocusCashNext.value = true;
     }
 };
-
 
 const orderId = computed(() => {
     const characters =
@@ -833,86 +841,79 @@ const orderId = computed(() => {
     ).join("");
 });
 
- const submitOrder = async () => {
-    if (isSubmitting.value) return;
-    isSubmitting.value = true;
+const submitOrder = async () => {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
 
-    if (balance.value < 0) {
-        isAlertModalOpen.value = true;
-        message.value = "Cash is not enough";
-        isSubmitting.value = false;
-        return;
-    }
+  if (balance.value < 0) {
+      isAlertModalOpen.value = true;
+      message.value = "Cash is not enough";
+      isSubmitting.value = false;
+      return;
+  }
 
-    // ✅ Validate cheque if payment is 'online'
-    if (selectedPaymentMethod.value === 'online') {
-        if (
-            !cheque_number.value ||
-            !bank_name.value ||
-            !cheque_date.value ||
-            !cheque_amount.value
-        ) {
-            isAlertModalOpen.value = true;
-            message.value = "Please fill in all cheque fields (number, bank, date, amount)";
-            isSubmitting.value = false;
-            return;
-        }
-    }
+  if (selectedPaymentMethod.value === 'online') {
+      if (
+          !cheque_number.value ||
+          !bank_name.value ||
+          !cheque_date.value ||
+          !cheque_amount.value
+      ) {
+          isAlertModalOpen.value = true;
+          message.value = "Please fill in all cheque fields (number, bank, date, amount)";
+          isSubmitting.value = false;
+          return;
+      }
+  }
+  try {
+      const payload = {
+          customer: customer.value,
+          products: products.value,
+          employee_id: employee_id.value,
+          paymentMethod: selectedPaymentMethod.value,
+          userId: props.loggedInUser.id,
+          orderid: orderid.value,
+          cash: cash.value,
+          custom_discount: custom_discount.value,
+          isWholesale: isWholesale.value ? 1 : 0,
+          guide_name: guide_name.value,
+          guide_comi: guide_comi.value,
+          guide_cash: guide_cash.value,
+          total_to_include_guide: total_to_include_guide.value,
+          credit_bill: credit_bill.value,
+          guide_pending: guide_pending.value ? 1 : 0,
+      };
 
-    try {
-        const payload = {
-            customer: customer.value,
-            products: products.value,
-            employee_id: employee_id.value,
-            paymentMethod: selectedPaymentMethod.value,
-            userId: props.loggedInUser.id,
-            orderid: orderid.value,
-            cash: cash.value,
-            custom_discount: custom_discount.value,
-            isWholesale: isWholesale.value ? 1 : 0,
-            guide_name: guide_name.value,
-            guide_comi: guide_comi.value,
-            guide_cash: guide_cash.value,
-            total_to_include_guide: total_to_include_guide.value,
-            credit_bill: credit_bill.value,
-            guide_pending: guide_pending.value ? 1 : 0,
-        };
+      if (selectedPaymentMethod.value === 'online') {
+          payload.online = {
+              cheque_number: cheque_number.value,
+              bank_name: bank_name.value,
+              cheque_date: cheque_date.value,
+              amount: cheque_amount.value,
+              notes: cheque_notes.value || '',
+          };
+      }
+      const response = await axios.post("/pos/submit", payload);
 
-        // ✅ Include cheque object if selected
-        if (selectedPaymentMethod.value === 'online') {
-            payload.online = {
-                cheque_number: cheque_number.value,
-                bank_name: bank_name.value,
-                cheque_date: cheque_date.value,
-                amount: cheque_amount.value,
-                notes: cheque_notes.value || '',
-            };
-        }
-
-        const response = await axios.post("/pos/submit", payload);
-
-        isSuccessModalOpen.value = true;
-        console.log("Order submitted successfully:", response.data);
-    } catch (error) {
-        if (error.response?.status === 423) {
-            isAlertModalOpen.value = true;
-            message.value = error.response.data.message;
-        } else {
-            isAlertModalOpen.value = true;
-            message.value = "An error occurred while submitting the order.";
-        }
-        console.error("Order submission error:", error);
-    } finally {
-        isSubmitting.value = false;
-    }
+      isSuccessModalOpen.value = true;
+      console.log("Order submitted successfully:", response.data);
+  } catch (error) {
+      if (error.response?.status === 423) {
+          isAlertModalOpen.value = true;
+          message.value = error.response.data.message;
+      } else {
+          isAlertModalOpen.value = true;
+          message.value = "An error occurred while submitting the order.";
+      }
+      console.error("Order submission error:", error);
+  } finally {
+      isSubmitting.value = false;
+  }
 };
-
-
 
 const updateOrder = async () => {
   console.log("Selected Order:", selectedOrder.value);
 
-  // Check if selectedOrder exists and has an order_id
   if (!selectedOrder.value || !selectedOrder.value.order_id) {
     console.error("No order selected to update");
     isAlertModalOpen.value = true;
@@ -969,9 +970,6 @@ const subtotal = computed(() => {
     return total + price * item.quantity;
   }, 0).toFixed(2);
 });
-
-
-
 
 const totalDiscount = computed(() => {
     const productDiscount = products.value.reduce((total, item) => {
@@ -1082,7 +1080,7 @@ const submitBarcode = async () => {
     try {
         // Send POST request to the backend
         const response = await axios.post(route("pos.getProduct"), {
-            barcode: form.barcode, // Send the barcode field
+            barcode: form.barcode, 
         });
 
         // Extract the response data
@@ -1094,7 +1092,6 @@ const submitBarcode = async () => {
                 message.value = "Product is out of stock";
                 return;
             }
-            // Check if the product already exists in the products array
             const existingProduct = products.value.find(
                 (item) => item.id === fetchedProduct.id
             );
@@ -1112,6 +1109,10 @@ const submitBarcode = async () => {
 
             product.value = fetchedProduct;
             error.value = null;
+            
+            shouldFocusCashNext.value = true;
+            focusOnCashField();
+            
             console.log(
                 "Product fetched successfully and added to cart:",
                 fetchedProduct
@@ -1119,7 +1120,7 @@ const submitBarcode = async () => {
         } else {
             isAlertModalOpen.value = true;
             message.value = fetchedError;
-            error.value = fetchedError; // Set the error message
+            error.value = fetchedError;
             console.error("Error:", fetchedError);
         }
     } catch (err) {
@@ -1132,6 +1133,7 @@ const submitBarcode = async () => {
         error.value = "An unexpected error occurred. Please try again.";
     }
 };
+
 
 // Handle input from the barcode scanner
 const handleScannerInput = (event) => {
@@ -1191,7 +1193,68 @@ const handleSelectedProducts = (selectedProducts) => {
             });
         }
     });
+    
+    shouldFocusCashNext.value = true;
+    focusOnCashField();
 };
+
+const handleKeyDown = (event) => {
+  const activeElement = document.activeElement;
+  const cashInputEl = cashInputRef.value?.$el?.querySelector('input');
+
+  // Prevent accidental form submit on Enter key when focused on Confirm Order
+  if (event.key === 'Enter') {
+    if (confirmButtonRef.value === activeElement) {
+      event.preventDefault();
+      confirmButtonRef.value.click(); // Trigger click manually
+      return;
+    }
+
+    // Prevent accidental enter triggering barcode submission globally
+    const tag = activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' && activeElement?.id !== 'search') {
+      event.preventDefault(); // Don't allow Enter to do anything unless inside search input
+    }
+  }
+
+  if (event.key === 'Tab') {
+    // Force focus to cash input if flagged
+    if (shouldFocusCashNext.value) {
+      event.preventDefault();
+      shouldFocusCashNext.value = false;
+      nextTick(() => {
+        if (cashInputRef.value?.$el?.querySelector('input')) {
+          cashInputRef.value.$el.querySelector('input').focus();
+        }
+      });
+      return;
+    }
+
+    // Tab from cash input to confirm button
+    if (activeElement === cashInputEl) {
+      event.preventDefault();
+      nextTick(() => {
+        if (confirmButtonRef.value) {
+          confirmButtonRef.value.focus();
+        }
+      });
+    }
+  }
+};
+
+
+// Add event listener on mount
+onMounted(() => {
+    document.addEventListener("keypress", handleScannerInput);
+    document.addEventListener("keydown", handleKeyDown);
+    console.log(props.products);
+});
+
+// Clean up event listener on unmount
+onUnmounted(() => {
+    document.removeEventListener("keypress", handleScannerInput);
+    document.removeEventListener("keydown", handleKeyDown);
+});
 
 const resetToLiveBill = () => {
       selectedOrder.value = null;
