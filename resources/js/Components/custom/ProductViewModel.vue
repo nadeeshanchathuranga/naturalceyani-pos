@@ -351,11 +351,11 @@ const barcodeCount = ref(1);
           gap: 0mm;
         }
 
-        .barcode-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 0mm;
-        }
+      .barcode-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 5mm;
+      }
 
         .barcode-label {
           width: 37.5mm;

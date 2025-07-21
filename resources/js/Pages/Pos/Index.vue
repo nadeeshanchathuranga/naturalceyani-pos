@@ -621,7 +621,7 @@ class="cursor-pointer py-1 text-center px-4 bg-red-600 rounded-xl font-bold text
          :guide_pending="guide_pending"
      :guide_comi="guide_comi"
   :guide_cash="guide_cash"
-  :guide_name="guide_name"  
+  :guide_name="guide_name"
     :paymentMethod="selectedPaymentMethod"
         />
 
@@ -773,7 +773,7 @@ const addCustomerDetails = () => {
 };
 
 const props = defineProps({
-    loggedInUser: Object, 
+    loggedInUser: Object,
     allcategories: Array,
     allemployee: Array,
     colors: Array,
@@ -803,8 +803,8 @@ const selectedPaymentMethod = ref("cash");
 
 const refreshData = () => {
     router.visit(route("pos.index"), {
-        preserveScroll: false, 
-        preserveState: false, 
+        preserveScroll: false,
+        preserveState: false,
     });
 };
 
@@ -813,8 +813,8 @@ const removeProduct = (id) => {
 };
 
 const removeCoupon = () => {
-    appliedCoupon.value = null; 
-    couponForm.code = ""; 
+    appliedCoupon.value = null;
+    couponForm.code = "";
 };
 
 const incrementQuantity = (id) => {
@@ -1080,7 +1080,7 @@ const submitBarcode = async () => {
     try {
         // Send POST request to the backend
         const response = await axios.post(route("pos.getProduct"), {
-            barcode: form.barcode, 
+            barcode: form.barcode,
         });
 
         // Extract the response data
@@ -1109,10 +1109,10 @@ const submitBarcode = async () => {
 
             product.value = fetchedProduct;
             error.value = null;
-            
+
             shouldFocusCashNext.value = true;
             focusOnCashField();
-            
+
             console.log(
                 "Product fetched successfully and added to cart:",
                 fetchedProduct
@@ -1193,7 +1193,7 @@ const handleSelectedProducts = (selectedProducts) => {
             });
         }
     });
-    
+
     shouldFocusCashNext.value = true;
     focusOnCashField();
 };

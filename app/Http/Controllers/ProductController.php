@@ -290,7 +290,7 @@ $expiryAlertCount = $expiryProducts->count();
             }
 
             if (empty($validated['barcode'])) {
-                $validated['barcode'] = $this->generateUniqueCode(12);
+                $validated['barcode'] = $this->generateUniqueCode(7);
             }
 
 
@@ -416,7 +416,7 @@ public function productVariantStore(Request $request)
 
         // Generate barcode if not provided
         if (empty($validated['barcode'])) {
-            $validated['barcode'] = $this->generateUniqueBarcode();
+            $validated['barcode'] = $this->generateUniqueBarcode(7);
         }
 
         if ($request->hasFile('certificate')) {
@@ -448,7 +448,7 @@ public function productVariantStore(Request $request)
 }
 
 // Helper to generate unique barcode
-private function generateUniqueBarcode($length = 12)
+private function generateUniqueBarcode($length = 7)
 {
     do {
         $barcode = strtoupper(Str::random($length));
@@ -512,6 +512,8 @@ private function generateUniqueBarcode($length = 12)
 
  public function update(Request $request, Product $product)
 {
+
+
     if (!Gate::allows('hasRole', ['Admin'])) {
         abort(403, 'Unauthorized');
     }
