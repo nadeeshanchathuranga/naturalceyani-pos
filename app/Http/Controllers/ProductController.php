@@ -88,7 +88,9 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+
+
+public function index(Request $request)
 {
     $query = $request->input('search');
     $sortOrder = $request->input('sort');
@@ -97,49 +99,40 @@ class ProductController extends Controller
     $stockStatus = $request->input('stockStatus');
     $selectedCategory = $request->input('selectedCategory');
 
-    $rawProducts = Product::with(['category', 'color', 'size', 'supplier'])
-
-     ->whereNotNull('name')
+    // Base query
+    $productsQuery = Product::with(['category', 'color', 'size', 'supplier'])
+        ->whereNotNull('name')
         ->when($query, fn($q) => $q->where(fn($sub) =>
             $sub->where('name', 'like', "%{$query}%")
-                 ->orWhere('code', 'like', "%{$query}%")))
-        ->when($selectedColor, fn($q) => $q->whereHas('color', fn($c) => $c->where('name', $selectedColor)))
-        ->when($selectedSize, fn($q) => $q->whereHas('size', fn($s) => $s->where('name', $selectedSize)))
-        ->when($selectedCategory, fn($q) => $q->where('category_id', $selectedCategory))
+                ->orWhere('code', 'like', "%{$query}%")))
+        ->when($selectedColor, fn($q) =>
+            $q->whereHas('color', fn($c) => $c->where('name', $selectedColor)))
+        ->when($selectedSize, fn($q) =>
+            $q->whereHas('size', fn($s) => $s->where('name', $selectedSize)))
+        ->when($selectedCategory, fn($q) =>
+            $q->where('category_id', $selectedCategory))
         ->when($stockStatus, function ($q) use ($stockStatus) {
             if ($stockStatus === 'in') {
                 $q->where('stock_quantity', '>', 0);
             } elseif ($stockStatus === 'out') {
                 $q->where('stock_quantity', '<=', 0);
             }
-        })
-        ->orderByDesc('id')
-        ->get();
+        });
 
-
-
-    // Filter to get only one record per code with stock > 0 (oldest first)
-    $filteredProducts = $rawProducts->groupBy('code')->map(function ($group) {
-        return $group->firstWhere('stock_quantity', '>', 0) ?? $group->first();
-    })->values(); // `values()` to reset array indexes
-
-    // Apply sort by price if specified
-    if (in_array($sortOrder, ['asc', 'desc'])) {
-        $filteredProducts = $filteredProducts->sortBy('selling_price', SORT_REGULAR, $sortOrder === 'desc')->values();
+    // Apply price sorting if specified
+    if ($sortOrder === 'asc' || $sortOrder === 'desc') {
+        $productsQuery->orderBy('selling_price', $sortOrder);
+    } else {
+        $productsQuery->orderBy('created_at', 'desc');
     }
 
-    // Paginate manually using Laravel’s LengthAwarePaginator
-    $perPage = 8;
-    $currentPage = LengthAwarePaginator::resolveCurrentPage();
-    $pagedProducts = new LengthAwarePaginator(
-        $filteredProducts->forPage($currentPage, $perPage),
-        $filteredProducts->count(),
-        $perPage,
-        $currentPage,
-        ['path' => request()->url(), 'query' => request()->query()]
-    );
+    // Final paginated result
+    $products = $productsQuery->paginate(8)->withQueryString();
 
-    // Load other data
+    // Total filtered products
+    $totalProducts = $products->total();
+
+    // Other dropdown / alert data
     $allcategories = Category::with('parent')->get()->map(function ($category) {
         $category->hierarchy_string = $category->hierarchy_string;
         return $category;
@@ -148,33 +141,30 @@ class ProductController extends Controller
     $preOrderProducts = Product::with(['category', 'supplier', 'color', 'size'])
         ->whereColumn('total_quantity', '<=', 'preorder_level_qty')
         ->get();
+
     $preOrderAlertCount = $preOrderProducts->count();
 
+    $expiryProducts = Product::with(['category', 'supplier'])
+        ->whereNotNull('expire_date')
+        ->get()
+        ->map(function ($product) {
+            $product->days_left = Carbon::now()->diffInDays(Carbon::parse($product->expire_date), false);
+            $product->within_margin = $product->days_left <= $product->expiry_date_margin;
+            return $product;
+        })
+        ->filter(fn ($p) => $p->within_margin)
+        ->values();
 
-$expiryProducts = Product::with(['category', 'supplier'])
-    ->whereNotNull('expire_date')
-    ->get()
-    ->map(function ($product) {
-        $product->days_left = Carbon::now()->diffInDays(Carbon::parse($product->expire_date), false);
-        $product->within_margin = $product->days_left <= $product->expiry_date_margin;
-        return $product;
-    })
-    ->filter(fn ($p) => $p->within_margin)
-    ->values(); // 👈 Important to reset keys
-
-$expiryAlertCount = $expiryProducts->count();
-
-
-
+    $expiryAlertCount = $expiryProducts->count();
 
     return Inertia::render('Products/Index', [
-        'products' => $pagedProducts,
-        'rawProducts' => $rawProducts,
+        'products' => $products,
+        'rawProducts' => $products->items(), // send current page items for barcode modal
         'allcategories' => $allcategories,
         'colors' => Color::latest()->get(),
         'sizes' => Size::latest()->get(),
         'suppliers' => Supplier::latest()->get(),
-        'totalProducts' => $filteredProducts->count(),
+        'totalProducts' => $totalProducts,
         'search' => $query,
         'sort' => $sortOrder,
         'color' => $selectedColor,
@@ -187,6 +177,7 @@ $expiryAlertCount = $expiryProducts->count();
         'expiryAlertCount' => $expiryAlertCount,
     ]);
 }
+
 
 
     /**
@@ -278,7 +269,7 @@ $expiryAlertCount = $expiryProducts->count();
 
         ]);
 
-        // dd($validated);
+
 
         try {
             // Handle image upload
@@ -290,7 +281,7 @@ $expiryAlertCount = $expiryProducts->count();
             }
 
             if (empty($validated['barcode'])) {
-                $validated['barcode'] = $this->generateUniqueCode(7);
+                $validated['barcode'] = $this->generateUniqueCode();
             }
 
 
@@ -416,7 +407,7 @@ public function productVariantStore(Request $request)
 
         // Generate barcode if not provided
         if (empty($validated['barcode'])) {
-            $validated['barcode'] = $this->generateUniqueBarcode(7);
+            $validated['barcode'] = $this->generateUniqueBarcode();
         }
 
         if ($request->hasFile('certificate')) {
@@ -510,83 +501,104 @@ private function generateUniqueBarcode($length = 7)
      * Update the specified resource in storage.
      */
 
- public function update(Request $request, Product $product)
+
+
+public function update(Request $request, Product $product)
 {
-
-
     if (!Gate::allows('hasRole', ['Admin'])) {
         abort(403, 'Unauthorized');
     }
 
-    $validated = $request->validate([
-        'category_id'           => 'nullable|exists:categories,id',
-        'name'                  => 'required|string|max:255',
-        'size_id'               => 'nullable|exists:sizes,id',
-        'color_id'              => 'nullable|exists:colors,id',
-        'cost_price'            => 'required|numeric|min:0',
-        'selling_price'         => 'required|numeric|min:0',
-        'discounted_price'      => 'nullable|numeric|min:0',
-        'discount'              => 'nullable|numeric|min:0|max:100',
-        'stock_quantity'        => 'nullable|integer|min:0',
-        'supplier_id'           => 'nullable|exists:suppliers,id',
-        'image'                 => 'nullable|image|max:2048',
-        'certificate'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-        'expire_date'           => 'nullable|date',
-        'expiry_date_margin'    => 'nullable|integer|min:0',
-        'preorder_level_qty'    => 'nullable|integer|min:0',
-        'batch_no'              => 'nullable|string|max:50',
-        'purchase_date'         => 'nullable|date',
-        'whole_price'           => 'required|numeric|min:0',
-        'final_whole_price'     => 'nullable|numeric|min:0',
-        'wholesale_discount'    => 'nullable|numeric|min:0|max:100',
-    ]);
+    try {
+        $validated = $request->validate([
+            'category_id'           => 'nullable|exists:categories,id',
+            'name'                  => 'required|string|max:255',
+            'size_id'               => 'nullable|exists:sizes,id',
+            'color_id'              => 'nullable|exists:colors,id',
+            'cost_price'            => 'required|numeric|min:0',
+            'selling_price'         => 'required|numeric|min:0',
+            'discounted_price'      => 'nullable|numeric|min:0',
+            'discount'              => 'nullable|numeric|min:0|max:100',
+            'stock_quantity'        => 'required|integer|min:0',
 
-    // Handle image upload
-    if ($request->hasFile('image')) {
-        // Delete old image if exists
-        if ($product->image && Storage::disk('public')->exists(str_replace('storage/', '', $product->image))) {
-            Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
-        }
-
-        $fileName = 'product_' . now()->format('YmdHis') . '.' . $request->file('image')->getClientOriginalExtension();
-        $path = $request->file('image')->storeAs('products', $fileName, 'public');
-        $validated['image'] = 'storage/' . $path;
-    } else {
-        $validated['image'] = $product->image;
-    }
-
-    // Handle certificate upload
-    if ($request->hasFile('certificate')) {
-        if ($product->certificate_path && Storage::disk('public')->exists($product->certificate_path)) {
-            Storage::disk('public')->delete($product->certificate_path);
-        }
-
-        $certificatePath = $request->file('certificate')->store('certificates', 'public');
-        $validated['certificate_path'] = $certificatePath;
-    } else {
-        $validated['certificate_path'] = $product->certificate_path;
-    }
-
-    // Stock quantity and transaction
-    $validated['total_quantity'] = $validated['stock_quantity'] ?? $product->stock_quantity;
-    $stockChange = ($validated['stock_quantity'] ?? $product->stock_quantity) - $product->stock_quantity;
-
-    $product->update($validated);
-
-    if ($stockChange !== 0) {
-        $transactionType = $stockChange > 0 ? 'Added' : 'Deducted';
-
-        StockTransaction::create([
-            'product_id'       => $product->id,
-            'transaction_type' => $transactionType,
-            'quantity'         => abs($stockChange),
-            'transaction_date' => now(),
-            'supplier_id'      => $validated['supplier_id'] ?? null,
+            'image'                 => 'nullable|image|max:2048',
+            'certificate'           => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'expire_date'           => 'nullable|date',
+            'expiry_date_margin'    => 'nullable|integer|min:0',
+            'preorder_level_qty'    => 'nullable|integer|min:0',
+            'batch_no'              => 'nullable|string|max:50',
+            'purchase_date'         => 'nullable|date',
+            'whole_price'           => 'nullable|numeric|min:0',
+            'final_whole_price'     => 'nullable|numeric|min:0',
+            'wholesale_discount'    => 'nullable|numeric|min:0|max:100',
+             'code' => 'nullable|max:50',
         ]);
-    }
 
-    return redirect()->route('products.index')->with('banner', 'Product updated successfully');
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            if ($product->image && Storage::disk('public')->exists(str_replace('storage/', '', $product->image))) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
+            }
+
+            $fileName = 'product_' . now()->format('YmdHis') . '.' . $request->file('image')->getClientOriginalExtension();
+            $path = $request->file('image')->storeAs('products', $fileName, 'public');
+            $validated['image'] = 'storage/' . $path;
+        } else {
+            $validated['image'] = $product->image;
+        }
+
+        // Handle certificate upload
+        if ($request->hasFile('certificate')) {
+            if ($product->certificate_path && Storage::disk('public')->exists($product->certificate_path)) {
+                Storage::disk('public')->delete($product->certificate_path);
+            }
+
+            $certificatePath = $request->file('certificate')->store('certificates', 'public');
+            $validated['certificate_path'] = $certificatePath;
+        } else {
+            $validated['certificate_path'] = $product->certificate_path;
+        }
+
+        // Calculate stock change
+        $newQuantity = $validated['stock_quantity'] ?? $product->stock_quantity;
+        $stockChange = $newQuantity - $product->stock_quantity;
+        $validated['total_quantity'] = $newQuantity;
+
+        // Update product
+        $product->update($validated);
+
+        // Log stock change if needed
+        if ($stockChange !== 0) {
+            $transactionType = $stockChange > 0 ? 'Added' : 'Deducted';
+
+            StockTransaction::create([
+                'product_id'       => $product->id,
+                'transaction_type' => $transactionType,
+                'quantity'         => abs($stockChange),
+                'transaction_date' => now(),
+                'supplier_id'      => $validated['supplier_id'] ?? null,
+            ]);
+        }
+
+        return redirect()->route('products.index')->with('banner', 'Product updated successfully');
+
+    } catch (\Throwable $e) {
+
+
+        Log::error('Product update failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return back()->withErrors(['error' => 'Product update failed. Please try again.']);
+    }
 }
+
+
+
+
+
+
 
 
 

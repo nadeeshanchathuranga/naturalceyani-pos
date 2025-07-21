@@ -21,7 +21,7 @@ trait GeneratesUniqueCode
         $codeWithoutChecksum = $timestamp . $random; // Combine timestamp and random digits to get 12 digits
 
         // Ensure the code is exactly 12 digits
-        $codeWithoutChecksum = substr($codeWithoutChecksum, 0, 7);
+        $codeWithoutChecksum = substr($codeWithoutChecksum, 0, 12);
 
         // Calculate the checksum for EAN-13
         $checksum = $this->calculateEAN13Checksum($codeWithoutChecksum);
