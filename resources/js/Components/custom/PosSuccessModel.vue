@@ -553,7 +553,7 @@ const receiptHTML = `
     <body>
         <div class="receipt-container">
              <div class="header "  style="text-align: center;">
-                  <img src="/images/billlogo.png" style="width: 250px; height:110px;" />
+                  <img src="/images/billlogo.png" style="width: 350px; height:200px;" />
                   <h2 class="mb-1">Bank of Cinnamon</h2>
            ${companyInfo?.value?.name ? `<h1 class="mt-0">${companyInfo.value.name}</h1>` : ''}
   ${companyInfo?.value?.address ? `<p>${companyInfo.value.address}</p>` : ''}

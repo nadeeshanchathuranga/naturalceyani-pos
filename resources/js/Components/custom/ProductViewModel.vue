@@ -351,13 +351,14 @@ const barcodeCount = ref(1);
           gap: 0mm;
         }
 
-      .barcode-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 5mm;
-      }
+        .barcode-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 5mm;
+        }
 
         .barcode-label {
+
           width: 37.5mm;
           height: 25mm;
           display: flex;
@@ -381,35 +382,33 @@ const barcodeCount = ref(1);
           width: 100%;
         }
 
-        .barcode-svg {
-          flex: 1;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 12mm;
-          max-height: 12mm;
-          width: 100%;
-          padding: 0 1mm;
-        }
+      .barcode-svg {
+  width: 100%;
+  height: 12mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+    padding: 0 2mm;
+}
 
-        .barcode-svg svg {
-          max-width: 100%;
-          max-height: 100%;
-        }
+.barcode-svg svg {
+  width: 100%;
+  height: 100%;
+}
 
-        .bottom-info {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 8px;
-          font-weight: bold;
-          font-family: monospace;
-          width: 100%;
-          margin-top: 0.2mm;
-          white-space: nowrap;
-          line-height: 1;
-          padding: 0 4mm;
-        }
+
+    .bottom-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  width: 100%;
+  padding: 0 1mm;
+  white-space: nowrap;
+  font-weight: bold;
+  font-family: monospace;
+}
+
 
         .bottom-info span {
           max-width: 49%;
